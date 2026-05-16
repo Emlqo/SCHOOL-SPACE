@@ -3,11 +3,11 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PointerLockControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
 
-// 컨트롤러 공유 상태
+// 🕹️ 컨트롤러 상태
 const controlInput = { forward: false, backward: false, left: false, right: false, lookDeltaX: 0, lookDeltaY: 0 };
 
 // ==========================================
-// 🕹️ 하이브리드 플레이어 컨트롤러
+// 🏃 하이브리드 플레이어 컨트롤러
 // ==========================================
 function HybridPlayerController({ isTouch }) {
   const { camera } = useThree();
@@ -43,7 +43,6 @@ function HybridPlayerController({ isTouch }) {
   }, [camera]);
 
   useFrame(() => {
-    // 모바일 터치 환경일 때만 커스텀 시점 회전 적용 (PC는 PointerLockControls가 자동 처리)
     if (isTouch) {
       yaw.current -= controlInput.lookDeltaX * lookSensitivity;
       pitch.current -= controlInput.lookDeltaY * lookSensitivity;
@@ -57,7 +56,6 @@ function HybridPlayerController({ isTouch }) {
       controlInput.lookDeltaY = 0;
     }
 
-    // 이동 처리
     const direction = new THREE.Vector3();
     camera.getWorldDirection(direction);
     direction.y = 0;
@@ -71,7 +69,6 @@ function HybridPlayerController({ isTouch }) {
     if (controlInput.left) camera.position.addScaledVector(sideDirection, speed);
     if (controlInput.right) camera.position.addScaledVector(sideDirection, -speed);
 
-    // 14개 반 크기에 맞춘 복도 경계선 (Z축 한계치 대폭 증가)
     if (camera.position.x > 3.3) camera.position.x = 3.3;
     if (camera.position.x < -3.3) camera.position.x = -3.3;
     if (camera.position.z > 2) camera.position.z = 2;
@@ -82,115 +79,123 @@ function HybridPlayerController({ isTouch }) {
 }
 
 // ==========================================
-// 🏫 디테일업된 학교 복도 환경 컴포넌트
+// 🏫 디테일업된 리얼 학교 복도 환경
 // ==========================================
 function EnhancedSchoolHallway() {
-  // 1반부터 14반까지 생성
   const classesCount = 14;
   const segments = Array.from({ length: classesCount });
   const corridorLength = classesCount * 9 + 10;
   const corridorCenterZ = -(corridorLength / 2) + 4;
-  
-  const lockerColors = ['#3b82f6', '#eab308', '#22c55e', '#ef4444', '#f97316'];
 
   return (
     <>
-      {/* ☀️ 밝고 화사한 조명 세팅 */}
-      <ambientLight intensity={1.2} />
-      <directionalLight position={[10, 10, -20]} intensity={1.5} color="#fffbeb" castShadow />
+      <ambientLight intensity={1.5} />
+      <directionalLight position={[10, 10, -20]} intensity={1.0} color="#fff" castShadow />
       
-      {/* 복도 길이에 맞춰 일정한 간격으로 포인트 조명 배치 */}
       {segments.map((_, i) => (
-        i % 2 === 0 && <pointLight key={`light-${i}`} position={[0, 4, -8 - i * 9]} intensity={0.5} distance={20} />
+        i % 2 === 0 && <pointLight key={`light-${i}`} position={[0, 4, -8 - i * 9]} intensity={0.4} distance={20} />
       ))}
 
-      {/* 바닥 (따뜻한 나무색) */}
+      {/* 바닥 (광택 있는 마룻바닥) */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, corridorCenterZ]}>
         <planeGeometry args={[8, corridorLength]} />
-        <meshStandardMaterial color="#d97706" roughness={0.7} />
+        <meshStandardMaterial color="#b45309" roughness={0.3} />
       </mesh>
 
-      {/* 천장 */}
+      {/* 천장 (텍스처 톤다운) */}
       <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 5, corridorCenterZ]}>
         <planeGeometry args={[8, corridorLength]} />
         <meshStandardMaterial color="#f8fafc" roughness={0.9} />
       </mesh>
 
-      {/* 좌우 벽면 (화사한 아이보리) */}
-      <mesh position={[-4, 2.5, corridorCenterZ]} rotation={[0, Math.PI / 2, 0]}>
-        <planeGeometry args={[corridorLength, 5]} />
-        <meshStandardMaterial color="#fffbeb" roughness={0.8} />
-      </mesh>
-      <mesh position={[4, 2.5, corridorCenterZ]} rotation={[0, -Math.PI / 2, 0]}>
-        <planeGeometry args={[corridorLength, 5]} />
-        <meshStandardMaterial color="#fffbeb" roughness={0.8} />
-      </mesh>
+      {/* 🚀 벽면 디테일: 상단 흰색, 하단 연한 옥색(학교 페인트 느낌) 투톤 분리 */}
+      {/* 상단 벽 */}
+      <mesh position={[-4, 3.1, corridorCenterZ]} rotation={[0, Math.PI / 2, 0]}><planeGeometry args={[corridorLength, 3.8]} /><meshStandardMaterial color="#f8fafc" /></mesh>
+      <mesh position={[4, 3.1, corridorCenterZ]} rotation={[0, -Math.PI / 2, 0]}><planeGeometry args={[corridorLength, 3.8]} /><meshStandardMaterial color="#f8fafc" /></mesh>
+      {/* 하단 벽 */}
+      <mesh position={[-3.98, 0.6, corridorCenterZ]} rotation={[0, Math.PI / 2, 0]}><planeGeometry args={[corridorLength, 1.2]} /><meshStandardMaterial color="#dcfce7" /></mesh>
+      <mesh position={[3.98, 0.6, corridorCenterZ]} rotation={[0, -Math.PI / 2, 0]}><planeGeometry args={[corridorLength, 1.2]} /><meshStandardMaterial color="#dcfce7" /></mesh>
+      {/* 투톤 분리선 (몰딩) */}
+      <mesh position={[-3.95, 1.2, corridorCenterZ]}><boxGeometry args={[0.05, 0.05, corridorLength]} /><meshStandardMaterial color="#94a3b8" /></mesh>
+      <mesh position={[3.95, 1.2, corridorCenterZ]}><boxGeometry args={[0.05, 0.05, corridorLength]} /><meshStandardMaterial color="#94a3b8" /></mesh>
 
-      {/* 하단 나무 걸레받이 디테일 */}
-      <mesh position={[-3.95, 0.2, corridorCenterZ]}><boxGeometry args={[0.1, 0.4, corridorLength]} /><meshStandardMaterial color="#78350f" /></mesh>
-      <mesh position={[3.95, 0.2, corridorCenterZ]}><boxGeometry args={[0.1, 0.4, corridorLength]} /><meshStandardMaterial color="#78350f" /></mesh>
-
-      {/* 🚀 교실 문, 표지판, 창문, 사물함 반복 배치 */}
+      {/* 각 반별 디테일 인테리어 배치 */}
       {segments.map((_, index) => {
         const zPos = -8 - index * 9;
         const currentClass = index + 1;
-        const lColor = lockerColors[index % lockerColors.length];
 
         return (
           <group key={index}>
-            {/* --- 왼쪽: 교실 구역 --- */}
+            {/* 🚪 교실 문 디테일 */}
             <mesh position={[-3.96, 1.3, zPos]}><boxGeometry args={[0.05, 2.6, 1.4]} /><meshStandardMaterial color="#8b5a2b" /></mesh>
-            <mesh position={[-3.9, 1.3, zPos + 0.5]}><sphereGeometry args={[0.04, 16, 16]} /><meshStandardMaterial color="#fcd34d" metalness={0.6} /></mesh>
+            {/* 문 손잡이 */}
+            <mesh position={[-3.9, 1.3, zPos + 0.5]}><sphereGeometry args={[0.04, 16, 16]} /><meshStandardMaterial color="#cbd5e1" metalness={0.8} /></mesh>
+            {/* 문 유리창 */}
+            <mesh position={[-3.93, 1.7, zPos]}><boxGeometry args={[0.02, 0.8, 0.6]} /><meshStandardMaterial color="#bae6fd" transparent opacity={0.6} roughness={0.1} /></mesh>
             
-            {/* 🏫 문 위 반 이름 표지판 (HTML 오버레이를 3D 공간에 합성) */}
+            {/* 문 위 반 이름 표지판 */}
             <Html transform position={[-3.95, 3.2, zPos]} rotation={[0, Math.PI / 2, 0]}>
               <div className="bg-white border-4 border-gray-800 px-4 py-1 flex flex-col items-center justify-center rounded-xl shadow-lg w-32 pointer-events-none">
-                <span className="text-[10px] font-black text-gray-400 mb-[-4px]">SCHOOL</span>
+                <span className="text-[10px] font-black text-gray-400 mb-[-4px]">CLASSROOM</span>
                 <span className="text-2xl font-black text-gray-800">{currentClass} 반</span>
               </div>
             </Html>
 
-            {/* 교실 사이 알림판 */}
-            <mesh position={[-3.96, 1.8, zPos - 3.5]}><boxGeometry args={[0.03, 1.4, 2.4]} /><meshStandardMaterial color="#b45309" /></mesh>
-            <mesh position={[-3.94, 1.8, zPos - 3.5]}><boxGeometry args={[0.01, 1.2, 2.2]} /><meshStandardMaterial color="#e0f2fe" /></mesh>
+            {/* 📋 교실 사이 복도 게시판 */}
+            <group position={[-3.96, 1.8, zPos - 3.5]}>
+              <mesh><boxGeometry args={[0.03, 1.4, 2.4]} /><meshStandardMaterial color="#8b4513" /></mesh> {/* 나무 프레임 */}
+              <mesh position={[0.02, 0, 0]}><boxGeometry args={[0.01, 1.2, 2.2]} /><meshStandardMaterial color="#d2b48c" /></mesh> {/* 코르크 보드 */}
+              {/* 붙어있는 종이들 */}
+              <mesh position={[0.03, 0.2, -0.5]}><boxGeometry args={[0.01, 0.4, 0.3]} /><meshStandardMaterial color="#ffffff" /></mesh>
+              <mesh position={[0.03, -0.2, 0.2]}><boxGeometry args={[0.01, 0.3, 0.4]} /><meshStandardMaterial color="#fffae6" /></mesh>
+              <mesh position={[0.03, 0.1, 0.6]}><boxGeometry args={[0.01, 0.4, 0.3]} /><meshStandardMaterial color="#e0f2fe" /></mesh>
+            </group>
 
-            {/* 천장 형광등 */}
+            {/* 💡 천장 형광등 */}
             <mesh position={[0, 4.96, zPos]}><boxGeometry args={[0.6, 0.05, 2]} /><meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={1} /></mesh>
 
-            {/* --- 오른쪽: 사물함 및 창문 구역 --- */}
-            {/* 알록달록 사물함 (문 맞은편 약간 옆) */}
-            <mesh position={[3.8, 1, zPos - 1]}><boxGeometry args={[0.4, 2, 3]} /><meshStandardMaterial color={lColor} roughness={0.6} /></mesh>
-            
-            {/* 복도 유리 창문 (사물함 위) */}
-            <mesh position={[3.95, 3.2, zPos - 1]}><boxGeometry args={[0.05, 1.5, 3]} /><meshStandardMaterial color="#bae6fd" transparent opacity={0.4} /></mesh>
-            {/* 창틀 */}
-            <mesh position={[3.9, 3.2, zPos - 1]}><boxGeometry args={[0.1, 1.6, 3.1]} /><meshStandardMaterial color="#94a3b8" wireframe /></mesh>
+            {/* 🗄️ 철제 사물함 디테일 (오른쪽 벽) */}
+            <group position={[3.8, 1.2, zPos - 1]}>
+              <mesh><boxGeometry args={[0.4, 2.4, 3]} /><meshStandardMaterial color="#94a3b8" roughness={0.4} metalness={0.6} /></mesh>
+              {/* 사물함 3칸 구분을 위한 디테일 선 및 손잡이 */}
+              {[-0.8, 0, 0.8].map((offset) => (
+                <group key={offset} position={[-0.21, 0, offset]}>
+                  {/* 손잡이 */}
+                  <mesh position={[0, 0.2, -0.3]}><boxGeometry args={[0.02, 0.15, 0.05]} /><meshStandardMaterial color="#334155" /></mesh>
+                  {/* 환풍구 */}
+                  <mesh position={[0, 0.8, 0]}><boxGeometry args={[0.01, 0.2, 0.2]} /><meshStandardMaterial color="#334155" /></mesh>
+                </group>
+              ))}
+            </group>
+
+            {/* 🧯 소화기 함 (3개 반마다 1개씩) */}
+            {index % 3 === 0 && (
+              <group position={[3.9, 1.0, zPos - 5]}>
+                <mesh><boxGeometry args={[0.1, 0.8, 0.6]} /><meshStandardMaterial color="#ef4444" /></mesh>
+                <mesh position={[-0.06, 0, 0]}><boxGeometry args={[0.01, 0.6, 0.4]} /><meshStandardMaterial color="#ffffff" transparent opacity={0.6} /></mesh>
+              </group>
+            )}
           </group>
         );
       })}
 
       {/* 복도 끝 막다른 벽 */}
-      <mesh position={[0, 2.5, -corridorLength + 4]} rotation={[0, Math.PI, 0]}>
-        <planeGeometry args={[8, 5]} />
-        <meshStandardMaterial color="#cbd5e1" />
-      </mesh>
+      <mesh position={[0, 2.5, -corridorLength + 4]} rotation={[0, Math.PI, 0]}><planeGeometry args={[8, 5]} /><meshStandardMaterial color="#cbd5e1" /></mesh>
     </>
   );
 }
 
 // ==========================================
-// 🌐 스테이지 엔트리 래퍼 (기기 자동 감지 하이브리드)
+// 🌐 스테이지 엔트리 래퍼 (안내문 클릭 방해 버그 픽스)
 // ==========================================
 export default function GameStage({ dbUser }) {
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
 
-  // 접속 기기 판별 (터치가 가능한 기기인지)
   useEffect(() => {
     setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
   }, []);
 
-  // 모바일 조이스틱 및 시점 제어 상태
   const [joystick, setJoystick] = useState({ dragging: false, startX: 0, startY: 0, moveX: 0, moveY: 0 });
   const lookTouchId = useRef(null);
   const lastLookX = useRef(0);
@@ -261,7 +266,7 @@ export default function GameStage({ dbUser }) {
         <EnhancedSchoolHallway />
         <HybridPlayerController isTouch={isTouchDevice} />
         
-        {/* PC 전용: 완벽한 FPS 마우스 고정 컨트롤러 */}
+        {/* PC 전용 마우스 잠금 (화면 클릭 시 활성화) */}
         {!isTouchDevice && (
           <PointerLockControls 
             onLock={() => setIsLocked(true)} 
@@ -270,10 +275,10 @@ export default function GameStage({ dbUser }) {
         )}
       </Canvas>
 
-      {/* 💻 PC 전용 오버레이 가이드 (잠금 해제 시 나타남) */}
+      {/* 🚀 PC 전용 오버레이: pointer-events-none을 적용하여 화면 클릭이 캔버스로 통과하도록 수정! */}
       {!isTouchDevice && !isLocked && (
         <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-30 pointer-events-none p-4 text-center backdrop-blur-sm">
-          <div className="bg-white/10 border border-white/20 p-8 rounded-3xl max-w-md pointer-events-auto shadow-2xl">
+          <div className="bg-white/10 border border-white/20 p-8 rounded-3xl max-w-md shadow-2xl pointer-events-none">
             <h2 className="text-3xl font-black text-white mb-2">우리 학교 메타버스</h2>
             <p className="text-blue-300 text-base font-bold mb-6">화면을 클릭하면 복도로 입장합니다.</p>
             <div className="flex flex-col items-center space-y-3 text-gray-200 text-sm font-medium text-left border-t border-white/10 pt-6">
@@ -286,7 +291,7 @@ export default function GameStage({ dbUser }) {
         </div>
       )}
 
-      {/* 📱 모바일 전용 조이스틱 오버레이 */}
+      {/* 📱 모바일 전용 조이스틱 */}
       {isTouchDevice && (
         <div className="absolute inset-0 pointer-events-none z-10 flex items-end justify-between p-6">
           <div 
@@ -306,8 +311,9 @@ export default function GameStage({ dbUser }) {
         </div>
       )}
 
+      {/* 내비게이션 배지 */}
       <div className="absolute top-4 left-4 bg-slate-900/80 text-white px-4 py-2 rounded-xl text-xs font-bold shadow border border-slate-700 pointer-events-none z-20">
-        📍 학교 1층 복도
+        📍 학교 복도 (1반 ~ 14반)
       </div>
     </div>
   );
