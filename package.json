@@ -9,9 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@react-three/drei": "^9.100.0",   // 👈 추가
-    "@react-three/fiber": "^8.15.0",  // 👈 추가
-    "three": "^0.160.0",              // 👈 추가
+    "@react-three/drei": "^9.100.0",
+    "@react-three/fiber": "^8.15.0",
+    "three": "^0.160.0",
     "firebase": "^10.10.0",
     "framer-motion": "^11.0.0",
     "lucide-react": "^0.359.0",
