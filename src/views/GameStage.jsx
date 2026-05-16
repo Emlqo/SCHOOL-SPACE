@@ -1,181 +1,205 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { PointerLockControls } from '@react-three/drei';
+import * as THREE from 'three';
 
-export default function GameStage({ dbUser }) {
-  const stageRef = useRef(null);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isInitialized, setIsInitialized] = useState(false);
-  
-  // 1. 층수 상태 관리
-  const [currentFloor, setCurrentFloor] = useState(1);
-  
-  // 2. 근접한 문(Door) 상태 관리
-  const [nearbyDoor, setNearbyDoor] = useState(null);
+// ==========================================
+// 🕹️ 1인칭 키보드 이동 컨트롤러 컴포넌트
+// ==========================================
+function FirstPersonPlayer() {
+  const { camera } = useThree();
+  const speed = 0.15; // 이동 속도
 
-  // 층별 배경색 및 텍스트 설정
-  const FLOORS = {
-    1: { name: '1학년 복도', bgClass: 'bg-green-100' },
-    2: { name: '2학년 복도', bgClass: 'bg-blue-100' },
-    3: { name: '3학년 복도', bgClass: 'bg-yellow-100' }
-  };
+  // 키 입력 상태 저장
+  const keys = useRef({ w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false });
 
-  // 교실 문 데이터 (xPct는 화면 너비 대비 X좌표 비율 0~1)
-  const DOORS = [
-    { id: 'class_1', name: `${currentFloor}학년 1반`, xPct: 0.25 },
-    { id: 'class_2', name: `${currentFloor}학년 2반`, xPct: 0.50 },
-    { id: 'class_3', name: `${currentFloor}학년 3반`, xPct: 0.75 },
-  ];
-  
-  const DOOR_Y = 160; // 문이 위치한 Y 좌표 (위에서부터의 픽셀 거리)
-  const INTERACTION_RADIUS = 80; // 문과 아바타가 상호작용하는 반경 (픽셀)
-
-  // 컴포넌트 마운트 시 초기 중앙 좌표 설정
   useEffect(() => {
-    if (stageRef.current && !isInitialized) {
-      const rect = stageRef.current.getBoundingClientRect();
-      setPosition({ x: rect.width / 2, y: rect.height / 2 });
-      setIsInitialized(true);
+    const handleKeyDown = (e) => {
+      if (e.key.toLowerCase() in keys.current) keys.current[e.key.toLowerCase()] = true;
+      if (e.key in keys.current) keys.current[e.key] = true;
+    };
+    const handleKeyUp = (e) => {
+      if (e.key.toLowerCase() in keys.current) keys.current[e.key.toLowerCase()] = false;
+      if (e.key in keys.current) keys.current[e.key] = false;
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
+  // 매 프레임마다 카메라 위치 계산 (렌더링 루프 내부)
+  useFrame(() => {
+    // 카메라가 바라보는 방향 벡터 구하기
+    const direction = new THREE.Vector3();
+    camera.getWorldDirection(direction);
+    direction.y = 0; // 위아래 움직임 배제 (수평 이동)
+    direction.normalize();
+
+    // 측면(오른쪽) 방향 벡터 구하기
+    const sideDirection = new THREE.Vector3();
+    sideDirection.crossVectors(camera.up, direction).normalize();
+
+    // 앞/뒤 이동 (W, S, 방향키 위/아래)
+    if (keys.current.w || keys.current.ArrowUp) {
+      camera.position.addScaledVector(direction, speed);
     }
-  }, [isInitialized]);
-
-  // 마우스/터치 클릭 시 아바타 이동 목표 좌표 업데이트
-  const handlePointerDown = (e) => {
-    // 팝업 버튼이나 UI를 클릭했을 때는 이동하지 않도록 방어 로직
-    if (e.target.closest('button')) return;
-
-    if (!stageRef.current) return;
-    const rect = stageRef.current.getBoundingClientRect();
-    const targetX = e.clientX - rect.left;
-    const targetY = e.clientY - rect.top;
-    setPosition({ x: targetX, y: targetY });
-  };
-
-  // 🚀 피타고라스 정리를 활용한 실시간 근접 체크 로직
-  const checkProximity = (currentX, currentY) => {
-    if (!stageRef.current) return;
-    const rect = stageRef.current.getBoundingClientRect();
-
-    let foundDoor = null;
-
-    // 모든 문을 순회하며 아바타의 현재 위치와 거리를 계산
-    for (const door of DOORS) {
-      const doorPixelX = rect.width * door.xPct; // 문의 실제 픽셀 X 좌표
-      const doorPixelY = DOOR_Y; // 문의 실제 픽셀 Y 좌표
-
-      // Math.hypot를 사용하여 두 점 사이의 직선 거리 계산
-      const distance = Math.hypot(currentX - doorPixelX, currentY - doorPixelY);
-
-      // 반경 이내로 들어왔다면 foundDoor로 지정
-      if (distance < INTERACTION_RADIUS) {
-        foundDoor = door;
-        break; // 하나라도 찾으면 중단
-      }
+    if (keys.current.s || keys.current.ArrowDown) {
+      camera.position.addScaledVector(direction, -speed);
+    }
+    // 좌/우 이동 (A, D, 방향키 좌/우)
+    if (keys.current.a || keys.current.ArrowLeft) {
+      camera.position.addScaledVector(sideDirection, speed);
+    }
+    if (keys.current.d || keys.current.ArrowRight) {
+      camera.position.addScaledVector(sideDirection, -speed);
     }
 
-    // 상태가 변경되었을 때만 업데이트 (무한 렌더링 방지)
-    if (foundDoor?.id !== nearbyDoor?.id) {
-      setNearbyDoor(foundDoor);
-    }
-  };
+    // 복도 경계선 이탈 방지 (간단한 충돌 벽 경계 설정)
+    if (camera.position.x > 3.5) camera.position.x = 3.5;
+    if (camera.position.x < -3.5) camera.position.x = -3.5;
+    if (camera.position.z > 1) camera.position.z = 1;      // 뒤쪽 한계
+    if (camera.position.z < -45) camera.position.z = -45;  // 복도 끝 한계
+  });
 
-  const avatarIcon = dbUser?.equipped?.clothes?.icon || '🧍';
-  const hairIcon = dbUser?.equipped?.hair?.icon || '';
+  return null;
+}
+
+// ==========================================
+// 🏫 3D 학교 복도 공간 환경 컴포넌트
+// ==========================================
+function SchoolHallwayScene() {
+  // 복도에 일정 간격으로 교실 문과 게시판 배치하기 위한 배열 생성
+  const corridorSegments = Array.from({ length: 5 }); 
 
   return (
-    <div 
-      ref={stageRef}
-      onPointerDown={handlePointerDown}
-      // 층마다 배경색(bgClass)이 동적으로 변함
-      className={`w-full h-full relative overflow-hidden cursor-crosshair transition-colors duration-500 ${FLOORS[currentFloor].bgClass}`}
-      style={{
-        // 팁: 선생님이 올려주신 이미지를 배경으로 쓰시려면 아래 코드를 활성화하세요!
-        // backgroundImage: 'url("/선생님_이미지_이름.png")', 
-        // backgroundSize: 'cover',
-        // backgroundPosition: 'center'
-      }}
-    >
-      {/* 바닥 타일/그리드 연출 */}
-      <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(#000 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
+    <>
+      {/* 기본 조명 세팅 */}
+      <ambientLight intensity={0.6} />
+      <pointLight position={[0, 4, -10]} intensity={0.8} distance={30} castShadow />
+      <pointLight position={[0, 4, -30]} intensity={0.8} distance={30} castShadow />
 
-      {/* 중앙 안내 문구 */}
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-black font-bold text-4xl pointer-events-none opacity-10 select-none">
-        {FLOORS[currentFloor].name}
-      </div>
+      {/* 바닥 (타일 스타일 색상) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, -25]} receiveShadow>
+        <planeGeometry args={[8, 60]} />
+        <meshStandardMaterial color="#dedede" roughness={0.4} />
+      </mesh>
 
-      {/* 🚀 상단 벽에 배치된 교실 문(Doors) 렌더링 */}
-      {DOORS.map((door) => (
-        <div 
-          key={door.id} 
-          className="absolute flex flex-col items-center pointer-events-none"
-          style={{ 
-            left: `${door.xPct * 100}%`, 
-            top: `${DOOR_Y}px`, 
-            transform: 'translate(-50%, -100%)' // 중앙 하단 기준 정렬
-          }}
-        >
-          {/* 문 디자인 (선생님 이미지의 문과 비슷한 느낌으로 구현) */}
-          <div className="w-20 h-32 bg-amber-700 border-4 border-amber-900 rounded-t-xl relative flex justify-center shadow-lg">
-            <div className="absolute top-4 w-12 h-12 bg-blue-100 opacity-50 rounded border-2 border-amber-900"></div> {/* 유리창 */}
-            <div className="absolute top-1/2 right-2 w-3 h-3 bg-yellow-400 rounded-full"></div> {/* 손잡이 */}
-          </div>
-          {/* 반 이름 표지판 */}
-          <div className="absolute -top-6 bg-white px-3 py-1 text-sm font-black text-gray-800 rounded-lg shadow-md border-2 border-gray-200 whitespace-nowrap z-10">
-            {door.name}
+      {/* 천장 */}
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 5, -25]}>
+        <planeGeometry args={[8, 60]} />
+        <meshStandardMaterial color="#ffffff" roughness={0.9} />
+      </mesh>
+
+      {/* 왼쪽 벽 */}
+      <mesh position={[-4, 2.5, -25]} rotation={[0, Math.PI / 2, 0]}>
+        <planeGeometry args={[60, 5]} />
+        <meshStandardMaterial color="#f0fdf4" roughness={0.8} /> {/* 연한 초록빛 벽면 */}
+      </mesh>
+
+      {/* 오른쪽 벽 (창문이나 외부 전경이 들어설 수 있는 면) */}
+      <mesh position={[4, 2.5, -25]} rotation={[0, -Math.PI / 2, 0]}>
+        <planeGeometry args={[60, 5]} />
+        <meshStandardMaterial color="#f8fafc" roughness={0.8} />
+      </mesh>
+
+      {/* 🚀 복도 내부 인테리어 에셋 배치 (문, 게시판, 하단 걸레받이) */}
+      {corridorSegments.map((_, index) => {
+        const zPos = -8 - index * 9; // 각 교실의 세로 위치 기준점
+        return (
+          <group key={index}>
+            {/* 왼쪽 벽면 교실 문 */}
+            <mesh position={[-3.95, 1.3, zPos]}>
+              <boxGeometry args={[0.05, 2.6, 1.4]} />
+              <meshStandardMaterial color="#b45309" roughness={0.5} /> {/* 갈색 나무 문 */}
+            </mesh>
+            {/* 문 손잡이 */}
+            <mesh position={[-3.9, 1.3, zPos + 0.5]}>
+              <sphereGeometry args={[0.04, 16, 16]} />
+              <meshStandardMaterial color="#facc15" metalness={0.8} roughness={0.2} />
+            </mesh>
+            {/* 반 이름 표지판 */}
+            <mesh position={[-3.9, 2.9, zPos]}>
+              <boxGeometry args={[0.02, 0.2, 0.5]} />
+              <meshStandardMaterial color="#1e293b" />
+            </mesh>
+
+            {/* 교실 옆 게시판 디자인 항목 */}
+            <mesh position={[-3.95, 1.8, zPos - 2.5]}>
+              <boxGeometry args={[0.03, 1.2, 2.2]} />
+              <meshStandardMaterial color="#ca8a04" roughness={0.7} />
+            </mesh>
+            <mesh position={[-3.93, 1.8, zPos - 2.5]}>
+              <boxGeometry args={[0.01, 1.0, 2.0]} />
+              <meshStandardMaterial color="#38bdf8" roughness={0.9} /> {/* 파란 알림판 내지 */}
+            </mesh>
+
+            {/* 천장 형광등 광원 매핑 */}
+            <mesh position={[0, 4.95, zPos - 1.2]}>
+              <boxGeometry args={[0.4, 0.05, 1.5]} />
+              <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={1} />
+            </mesh>
+          </group>
+        );
+      })}
+
+      {/* 복도 정면 끝 막힘 벽 */}
+      <mesh position={[0, 2.5, -55]} rotation={[0, Math.PI, 0]}>
+        <planeGeometry args={[8, 5]} />
+        <meshStandardMaterial color="#cbd5e1" />
+      </mesh>
+    </>
+  );
+}
+
+// ==========================================
+// 🌐 스테이지 엔트리 래퍼
+// ==========================================
+export default function GameStage({ dbUser }) {
+  const [isLocked, setIsLocked] = useState(false);
+
+  return (
+    <div className="w-full h-full relative bg-slate-900 select-none">
+      {/* 1인칭 환경용 3D 캔버스 엔진 */}
+      <Canvas 
+        shadows 
+        camera={{ position: [0, 2, 0], fov: 60 }} // 카메라 위치: 높이 2(사람 눈높이), 화각 60도
+        className="w-full h-full"
+      >
+        <SchoolHallwayScene />
+        <FirstPersonPlayer />
+        
+        {/* 🚀 Drei 제공 1인칭 마우스 조작 컨트롤러락 */}
+        <PointerLockControls 
+          onLock={() => setIsLocked(true)} 
+          onUnlock={() => setIsLocked(false)} 
+        />
+      </Canvas>
+
+      {/* overlay 가이드 조작계 UI */}
+      {!isLocked && (
+        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-30 pointer-events-none p-4 text-center">
+          <div className="bg-white/10 border border-white/20 p-6 rounded-3xl max-w-sm backdrop-blur-md pointer-events-auto shadow-2xl">
+            <h2 className="text-2xl font-black text-white mb-2">3D 메타버스 복도</h2>
+            <p className="text-blue-300 text-sm font-bold mb-4">화면을 클릭하면 시점이 고정됩니다.</p>
+            <div className="flex flex-col items-center space-y-2 text-gray-300 text-xs text-left border-t border-white/10 pt-4">
+              <p>👀 <b>시점 전환:</b> 마우스 이동</p>
+              <p>🏃 <b>캐릭터 이동:</b> W, A, S, D 또는 키보드 방향키</p>
+              <p>🔓 <b>마우스 해제:</b> ESC 키 입력</p>
+            </div>
+            <button className="mt-6 w-full bg-blue-500 text-white font-black py-3 rounded-xl shadow-md hover:bg-blue-600 active:scale-95 transition">
+              시작하기 (화면 클릭)
+            </button>
           </div>
         </div>
-      ))}
-
-      {/* 아바타 렌더링 영역 */}
-      {isInitialized && (
-        <motion.div
-          className="absolute z-20 w-16 h-16 -ml-8 -mt-8 flex flex-col items-center justify-center pointer-events-none"
-          animate={{ x: position.x, y: position.y }}
-          transition={{ type: "tween", ease: "linear", duration: 0.5 }}
-          // 🚀 아바타가 이동하는 프레임마다 실시간 좌표를 가져와서 근접 체크!
-          onUpdate={(latest) => checkProximity(latest.x, latest.y)}
-        >
-          <div className="relative flex flex-col items-center">
-            {/* 아바타 이름표 */}
-            <div className="absolute -top-8 bg-white/90 text-gray-800 text-xs font-bold px-3 py-1 rounded-full shadow-md whitespace-nowrap border border-gray-100">
-              {dbUser.name}
-            </div>
-            {/* 옷과 헤어 */}
-            <div className="relative flex items-center justify-center">
-              {hairIcon && <div className="absolute top-[-10px] text-5xl z-20">{hairIcon}</div>}
-              <div className="text-6xl z-10">{avatarIcon}</div>
-            </div>
-
-            {/* 🚀 팝업 UI: 특정 문에 근접했을 때만 아바타 머리 위에 나타남 */}
-            {nearbyDoor && (
-              <motion.button
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="absolute -top-20 bg-blue-500 text-white font-black px-4 py-2 rounded-2xl shadow-xl whitespace-nowrap pointer-events-auto border-2 border-white hover:bg-blue-600 animate-bounce"
-                onClick={() => alert(`${nearbyDoor.name}에 입장합니다! (기능 준비 중)`)}
-              >
-                🚪 {nearbyDoor.name} 입장하기
-              </motion.button>
-            )}
-          </div>
-        </motion.div>
       )}
 
-      {/* 우측 하단: 층수 이동 UI (계단 버튼) */}
-      <div className="absolute bottom-6 right-6 flex flex-col bg-white p-2 rounded-2xl shadow-lg border-2 border-gray-100">
-        <span className="text-xs font-bold text-gray-500 text-center mb-2">계단</span>
-        {[3, 2, 1].map((floor) => (
-          <button
-            key={floor}
-            onClick={() => setCurrentFloor(floor)}
-            className={`w-12 h-12 mb-2 last:mb-0 rounded-xl font-black text-lg transition ${
-              currentFloor === floor 
-                ? 'bg-blue-500 text-white shadow-inner' 
-                : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-            }`}
-          >
-            {floor}F
-          </button>
-        ))}
+      {/* HUD: 현재 위치 좌표계 실시간 모니터링 */}
+      <div className="absolute bottom-4 left-4 bg-slate-900/80 text-white px-4 py-2 rounded-xl text-xs font-mono shadow border border-slate-700 pointer-events-none z-10">
+        🎮 1인칭 모드 구동 중 (WASD 조작)
       </div>
     </div>
   );
