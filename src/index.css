@@ -2,11 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
+/* 모바일 및 메타버스 환경 최적화 설정 */
+html, body, #root {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* 스크롤 완벽 차단 */
+  touch-action: none; /* 브라우저 기본 터치 액션(패닝, 줌 등) 무시 */
+  user-select: none; /* 텍스트 및 이미지 선택 방지 */
+  -webkit-user-select: none; /* iOS Safari 대응 */
+  overscroll-behavior: none; /* 당겨서 새로고침(Bounce) 방지 */
 }
