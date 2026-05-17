@@ -3,7 +3,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { SHOP_ITEMS } from '../constants/items';
 import { motion } from 'framer-motion';
-import { X, Box } from 'lucide-react';
+import { X, Box, RotateCw } from 'lucide-react'; // 🚀 회전 아이콘(RotateCw) 추가
 
 export default function RoomDecorationView({ dbUser }) {
   const roomRef = useRef(null);
@@ -26,8 +26,9 @@ export default function RoomDecorationView({ dbUser }) {
       instanceId: Date.now().toString(), 
       itemId: itemId, 
       icon: itemData.icon, 
-      x: 250, // 🚀 3D 입체 방의 정중앙 바닥 좌표로 스폰 위치 최적화
-      y: 350  
+      x: 250,
+      y: 350,
+      rotation: 0 // 🚀 새 가구 배치 시 기본 회전 각도(0도) 추가
     };
     const newLayout = [...layout, newItem];
     setLayout(newLayout);
@@ -36,6 +37,19 @@ export default function RoomDecorationView({ dbUser }) {
 
   const handleRemoveFurniture = async (instanceId) => {
     const newLayout = layout.filter(item => item.instanceId !== instanceId);
+    setLayout(newLayout);
+    await updateDoc(doc(db, 'users', dbUser.id || dbUser.uid), { roomLayout: newLayout });
+  };
+
+  // 🚀 가구 회전 기능 추가 (90도씩 회전)
+  const handleRotateFurniture = async (instanceId) => {
+    const newLayout = layout.map(item => {
+      if (item.instanceId === instanceId) {
+        // 기존에 회전값이 없으면 0으로 간주하고 90도를 더해줍니다.
+        return { ...item, rotation: (item.rotation || 0) + 90 };
+      }
+      return item;
+    });
     setLayout(newLayout);
     await updateDoc(doc(db, 'users', dbUser.id || dbUser.uid), { roomLayout: newLayout });
   };
@@ -59,38 +73,23 @@ export default function RoomDecorationView({ dbUser }) {
         {/* 방 전체 영역 (600x600 컨테이너) */}
         <div ref={roomRef} className="relative w-full max-w-[600px] aspect-square flex items-center justify-center">
           
-          {/* 🚀 평면을 넘어선 완벽한 3D 디오라마(Diorama) 입체 방 SVG 렌더링 */}
+          {/* 3D 디오라마 입체 방 SVG 렌더링 */}
           <svg viewBox="0 0 600 600" className="absolute inset-0 w-full h-full drop-shadow-[0_25px_35px_rgba(0,0,0,0.15)] pointer-events-none">
-            
-            {/* 1. 내부 벽 (초록색 페인트 느낌) */}
-            <polygon points="100,180 300,80 300,340 100,440" fill="#5E9F69" /> {/* 왼쪽 안 벽 */}
-            <polygon points="300,80 500,180 500,440 300,340" fill="#6FAC7A" /> {/* 오른쪽 안 벽 */}
-
-            {/* 2. 바닥 (따뜻한 마룻바닥) */}
+            <polygon points="100,180 300,80 300,340 100,440" fill="#5E9F69" />
+            <polygon points="300,80 500,180 500,440 300,340" fill="#6FAC7A" />
             <polygon points="100,440 300,340 500,440 300,540" fill="#CD9158" />
-
-            {/* 3. 걸레받이 (몰딩 디테일) */}
             <polygon points="100,425 300,325 300,340 100,440" fill="#936237" />
             <polygon points="300,325 500,425 500,440 300,340" fill="#7A4E29" />
-
-            {/* 🧱 4. [핵심 입체감!] 벽의 윗면 두께 (하이라이트) */}
-            <polygon points="100,180 300,80 300,60 80,170" fill="#91C39A" /> {/* 왼쪽 벽 두께 */}
-            <polygon points="300,80 500,180 520,170 300,60" fill="#A5D4AE" /> {/* 오른쪽 벽 두께 */}
-
-            {/* 🧱 5. [핵심 입체감!] 벽의 바깥쪽 단면 (어두운 명암) */}
-            <polygon points="80,170 100,180 100,460 80,450" fill="#40764A" /> {/* 왼쪽 벽 바깥쪽 */}
-            <polygon points="500,180 520,170 520,450 500,460" fill="#4B8455" /> {/* 오른쪽 벽 바깥쪽 */}
-
-            {/* 🧱 6. [핵심 입체감!] 바닥의 앞쪽 단면 (지층 절단면 느낌) */}
-            <polygon points="100,440 300,540 300,560 100,460" fill="#8B5B30" /> {/* 왼쪽 바닥 단면 */}
-            <polygon points="300,540 500,440 500,460 300,560" fill="#6D4522" /> {/* 오른쪽 바닥 단면 */}
-
-            {/* 7. 선명도를 높여주는 모서리 윤곽선 */}
+            <polygon points="100,180 300,80 300,60 80,170" fill="#91C39A" />
+            <polygon points="300,80 500,180 520,170 300,60" fill="#A5D4AE" />
+            <polygon points="80,170 100,180 100,460 80,450" fill="#40764A" />
+            <polygon points="500,180 520,170 520,450 500,460" fill="#4B8455" />
+            <polygon points="100,440 300,540 300,560 100,460" fill="#8B5B30" />
+            <polygon points="300,540 500,440 500,460 300,560" fill="#6D4522" />
             <polyline points="300,80 300,340" stroke="#4A8A55" strokeWidth="2" fill="none" />
             <polyline points="100,440 300,340 500,440" stroke="#A86F3E" strokeWidth="2" fill="none" />
           </svg>
 
-          {/* 명패 (입체 공간에 맞춰 위치 조정) */}
           <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-sm font-bold px-6 py-2.5 rounded-full shadow-2xl pointer-events-none border-2 border-white/10">
             {dbUser.name}님의 스페이스
           </div>
@@ -114,17 +113,31 @@ export default function RoomDecorationView({ dbUser }) {
                   {/* 타원형 그림자 */}
                   <div className="absolute bottom-3 w-20 h-6 bg-black/40 rounded-[50%] blur-[4px] -z-10 group-active:scale-90 transition-transform" />
                   
-                  {/* 가구 아이콘 */}
-                  <span className="text-[6rem] leading-none drop-shadow-md filter transition-transform group-hover:scale-105 group-active:scale-95 group-active:-translate-y-2">
-                    {displayIcon}
-                  </span>
-
-                  <button 
-                    onClick={() => handleRemoveFurniture(item.instanceId)} 
-                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 opacity-0 group-focus-within:opacity-100 transition shadow-lg z-20"
+                  {/* 🚀 가구 아이콘 (회전 스타일 적용!) */}
+                  <div 
+                    className="text-[6rem] leading-none drop-shadow-md transition-all duration-300 group-hover:scale-105 group-active:scale-95 group-active:-translate-y-2"
+                    style={{ transform: `rotate(${item.rotation || 0}deg)` }}
                   >
-                    <X size={18} strokeWidth={3} />
-                  </button>
+                    {displayIcon}
+                  </div>
+
+                  {/* 🚀 조작 버튼 그룹 (회전 + 삭제) */}
+                  <div className="absolute -top-4 -right-4 flex space-x-1.5 opacity-0 group-focus-within:opacity-100 transition-opacity z-20">
+                    {/* 회전 버튼 */}
+                    <button 
+                      onClick={() => handleRotateFurniture(item.instanceId)} 
+                      className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2.5 shadow-lg transition active:scale-90"
+                    >
+                      <RotateCw size={16} strokeWidth={3} />
+                    </button>
+                    {/* 삭제 버튼 */}
+                    <button 
+                      onClick={() => handleRemoveFurniture(item.instanceId)} 
+                      className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2.5 shadow-lg transition active:scale-90"
+                    >
+                      <X size={16} strokeWidth={3} />
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             );
