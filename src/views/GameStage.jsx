@@ -67,24 +67,24 @@ export default function GameStage({ dbUser }) {
         if (i % 2 === 0) this.add.image(xPos - 80, wallHeight - 40, 'board');
       }
 
-      // 🚀 실제 아이템 착용 정보 렌더링
+   // 🚀 실제 아이템 착용 정보 렌더링 (수정된 부분)
       playerContainer = this.add.container(200, 300);
       playerContainer.setSize(32, 32);
       this.physics.world.enable(playerContainer);
       
-      // 1. 기본 몸통
-      const bodyText = this.add.text(0, 0, '🧑', { fontSize: '40px' }).setOrigin(0.5);
-      // 2. 착용한 옷
+      // 1. 착용한 헤어 (머리 및 얼굴 역할, Y축을 위로)
+      const hairIcon = dbUser?.equipped?.hair?.icon || '🧑';
+      const hairText = this.add.text(0, -12, hairIcon, { fontSize: '32px' }).setOrigin(0.5);
+      
+      // 2. 착용한 옷 (몸통 역할, Y축을 아래로)
       const clothesIcon = dbUser?.equipped?.clothes?.icon || '👕';
-      const clothesText = this.add.text(0, 0, clothesIcon, { fontSize: '40px' }).setOrigin(0.5);
-      // 3. 착용한 헤어
-      const hairIcon = dbUser?.equipped?.hair?.icon || '💇';
-      const hairText = this.add.text(0, -5, hairIcon, { fontSize: '40px' }).setOrigin(0.5);
+      const clothesText = this.add.text(0, 12, clothesIcon, { fontSize: '32px' }).setOrigin(0.5);
       
-      const nameTagBg = this.add.rectangle(0, -32, 60, 18, 0xFFFFFF, 0.8).setOrigin(0.5);
-      const nameTag = this.add.text(0, -32, dbUser?.name || '학생', { fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: '#333' }).setOrigin(0.5);
+      const nameTagBg = this.add.rectangle(0, -40, 60, 18, 0xFFFFFF, 0.8).setOrigin(0.5);
+      const nameTag = this.add.text(0, -40, dbUser?.name || '학생', { fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: '#333' }).setOrigin(0.5);
       
-      playerContainer.add([bodyText, clothesText, hairText, nameTagBg, nameTag]);
+      // 컨테이너에 담기 (옷을 먼저, 머리를 나중에 담아야 자연스러움)
+      playerContainer.add([clothesText, hairText, nameTagBg, nameTag]);
       playerContainer.body.setCollideWorldBounds(true);
       this.physics.add.collider(playerContainer, topWall);
       this.cameras.main.startFollow(playerContainer, true, 0.08, 0.08);

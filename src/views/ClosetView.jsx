@@ -23,17 +23,15 @@ export default function ClosetView({ dbUser }) {
       <div className="w-1/3 bg-white flex flex-col items-center justify-center border-r border-gray-200 p-6 shadow-sm z-10">
         <h2 className="text-xl font-black text-gray-800 mb-8 tracking-tight">마이 아바타</h2>
         
-        {/* 캐릭터 합성 도화지 */}
-        <div className="relative w-56 h-56 bg-pink-50 rounded-full border-4 border-white shadow-lg flex items-center justify-center overflow-visible">
-          {/* 기본 몸통 */}
-          <div className="absolute text-[120px] z-10">🧑</div>
-          {/* 착용 옷 */}
-          <div className="absolute text-[120px] z-20">
-            {equipped.clothes ? equipped.clothes.icon : '👕'}
+  {/* 캐릭터 합성 도화지 (수정된 부분) */}
+        <div className="relative w-56 h-56 bg-pink-50 rounded-full border-4 border-white shadow-lg flex flex-col items-center justify-center overflow-hidden pt-4">
+          {/* 착용 헤어 (얼굴 역할) */}
+          <div className="text-[100px] z-20 leading-none drop-shadow-md">
+            {equipped.hair ? equipped.hair.icon : '🧑'}
           </div>
-          {/* 착용 헤어 (Y축 보정) */}
-          <div className="absolute text-[120px] z-30 top-[-20px]">
-            {equipped.hair ? equipped.hair.icon : '💇'}
+          {/* 착용 옷 (몸통 역할, 위로 살짝 당겨서 목을 연결) */}
+          <div className="text-[90px] z-10 -mt-4 leading-none">
+            {equipped.clothes ? equipped.clothes.icon : '👕'}
           </div>
         </div>
 
