@@ -26,7 +26,7 @@ export default function RoomDecorationView({ dbUser }) {
       instanceId: Date.now().toString(), 
       itemId: itemId, 
       icon: itemData.icon, 
-      x: 230, // 🚀 커진 방 크기에 맞춰 중앙 스폰 위치 조정
+      x: 250, // 🚀 3D 입체 방의 정중앙 바닥 좌표로 스폰 위치 최적화
       y: 350  
     };
     const newLayout = [...layout, newItem];
@@ -52,28 +52,50 @@ export default function RoomDecorationView({ dbUser }) {
   };
 
   return (
-    <div className="h-full flex flex-col relative bg-[#E4DCCF] rounded-2xl overflow-hidden">
+    <div className="h-full flex flex-col relative bg-[#F3F0E9] rounded-2xl overflow-hidden">
       
       <div className="flex-1 flex items-center justify-center relative p-4 overflow-hidden">
         
-        {/* 🚀 방 크기를 최대 600px로 대폭 확장하여 광활한 스페이스 제공 */}
-        <div ref={roomRef} className="relative w-full max-w-[600px] aspect-square">
+        {/* 방 전체 영역 (600x600 컨테이너) */}
+        <div ref={roomRef} className="relative w-full max-w-[600px] aspect-square flex items-center justify-center">
           
-          {/* 1.5배 커진 2.5D 아이소메트릭 배경 SVG */}
-          <svg viewBox="0 0 600 600" className="absolute inset-0 w-full h-full drop-shadow-2xl pointer-events-none">
-            <polygon points="75,180 300,60 300,330 75,450" fill="#2f7d46" />
-            <polygon points="300,60 525,180 525,450 300,330" fill="#388e51" />
-            <polygon points="75,450 300,330 525,450 300,570" fill="#8b5a2b" />
-            <polygon points="75,435 300,315 300,330 75,450" fill="#5c3a21" />
-            <polygon points="300,315 525,435 525,450 300,330" fill="#4a2e1b" />
+          {/* 🚀 평면을 넘어선 완벽한 3D 디오라마(Diorama) 입체 방 SVG 렌더링 */}
+          <svg viewBox="0 0 600 600" className="absolute inset-0 w-full h-full drop-shadow-[0_25px_35px_rgba(0,0,0,0.15)] pointer-events-none">
+            
+            {/* 1. 내부 벽 (초록색 페인트 느낌) */}
+            <polygon points="100,180 300,80 300,340 100,440" fill="#5E9F69" /> {/* 왼쪽 안 벽 */}
+            <polygon points="300,80 500,180 500,440 300,340" fill="#6FAC7A" /> {/* 오른쪽 안 벽 */}
+
+            {/* 2. 바닥 (따뜻한 마룻바닥) */}
+            <polygon points="100,440 300,340 500,440 300,540" fill="#CD9158" />
+
+            {/* 3. 걸레받이 (몰딩 디테일) */}
+            <polygon points="100,425 300,325 300,340 100,440" fill="#936237" />
+            <polygon points="300,325 500,425 500,440 300,340" fill="#7A4E29" />
+
+            {/* 🧱 4. [핵심 입체감!] 벽의 윗면 두께 (하이라이트) */}
+            <polygon points="100,180 300,80 300,60 80,170" fill="#91C39A" /> {/* 왼쪽 벽 두께 */}
+            <polygon points="300,80 500,180 520,170 300,60" fill="#A5D4AE" /> {/* 오른쪽 벽 두께 */}
+
+            {/* 🧱 5. [핵심 입체감!] 벽의 바깥쪽 단면 (어두운 명암) */}
+            <polygon points="80,170 100,180 100,460 80,450" fill="#40764A" /> {/* 왼쪽 벽 바깥쪽 */}
+            <polygon points="500,180 520,170 520,450 500,460" fill="#4B8455" /> {/* 오른쪽 벽 바깥쪽 */}
+
+            {/* 🧱 6. [핵심 입체감!] 바닥의 앞쪽 단면 (지층 절단면 느낌) */}
+            <polygon points="100,440 300,540 300,560 100,460" fill="#8B5B30" /> {/* 왼쪽 바닥 단면 */}
+            <polygon points="300,540 500,440 500,460 300,560" fill="#6D4522" /> {/* 오른쪽 바닥 단면 */}
+
+            {/* 7. 선명도를 높여주는 모서리 윤곽선 */}
+            <polyline points="300,80 300,340" stroke="#4A8A55" strokeWidth="2" fill="none" />
+            <polyline points="100,440 300,340 500,440" stroke="#A86F3E" strokeWidth="2" fill="none" />
           </svg>
 
-          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-sm font-bold px-5 py-2 rounded-full shadow-lg pointer-events-none">
+          {/* 명패 (입체 공간에 맞춰 위치 조정) */}
+          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-sm font-bold px-6 py-2.5 rounded-full shadow-2xl pointer-events-none border-2 border-white/10">
             {dbUser.name}님의 스페이스
           </div>
 
           {layout.map(item => {
-            // 🚀 핵심: DB에 '누워있는 사람 침대'가 저장되어 있어도 최신 '빈 침대'로 렌더링 강제 변환
             const latestItemData = SHOP_ITEMS.furniture.find(i => i.id === item.itemId);
             const displayIcon = latestItemData ? latestItemData.icon : item.icon;
 
@@ -92,7 +114,7 @@ export default function RoomDecorationView({ dbUser }) {
                   {/* 타원형 그림자 */}
                   <div className="absolute bottom-3 w-20 h-6 bg-black/40 rounded-[50%] blur-[4px] -z-10 group-active:scale-90 transition-transform" />
                   
-                  {/* 가구 아이콘 (방이 커진 만큼 text-[6rem]으로 더 큼직하게 렌더링) */}
+                  {/* 가구 아이콘 */}
                   <span className="text-[6rem] leading-none drop-shadow-md filter transition-transform group-hover:scale-105 group-active:scale-95 group-active:-translate-y-2">
                     {displayIcon}
                   </span>
@@ -110,15 +132,15 @@ export default function RoomDecorationView({ dbUser }) {
 
           {layout.length === 0 && (
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-60">
-              <Box size={40} className="text-white mb-2 drop-shadow" />
-              <p className="font-bold text-white drop-shadow-md text-lg">하단에서 가구를 꺼내 방을 꾸며보세요!</p>
+              <Box size={40} className="text-gray-800 mb-2 drop-shadow" />
+              <p className="font-black text-gray-800 drop-shadow-md text-lg">하단에서 가구를 꺼내 방을 꾸며보세요!</p>
             </div>
           )}
         </div>
       </div>
 
       {/* 📦 하단 인벤토리 영역 */}
-      <div className="h-44 bg-white/60 backdrop-blur-md border-t border-white/40 rounded-t-[2rem] p-5 flex items-center space-x-4 overflow-x-auto shrink-0 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+      <div className="h-44 bg-white/70 backdrop-blur-xl border-t border-white/50 rounded-t-[2rem] p-5 flex items-center space-x-4 overflow-x-auto shrink-0 shadow-[0_-10px_40px_rgba(0,0,0,0.08)]">
         {uniqueFurnitureIds.length === 0 ? (
            <div className="w-full text-center flex flex-col items-center">
              <span className="text-3xl mb-2">🛒</span>
@@ -134,7 +156,7 @@ export default function RoomDecorationView({ dbUser }) {
                 onClick={() => count > 0 && handleAddFurniture(itemId)} 
                 className={`flex-shrink-0 w-28 h-32 bg-white border-2 rounded-2xl flex flex-col items-center justify-center relative transition-all shadow-sm ${
                   count > 0 
-                  ? 'border-transparent hover:border-blue-400 hover:shadow-md cursor-pointer hover:-translate-y-1' 
+                  ? 'border-transparent hover:border-blue-400 hover:shadow-lg cursor-pointer hover:-translate-y-2' 
                   : 'border-gray-200 opacity-50 cursor-not-allowed grayscale'
                 }`}
               >
